@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin
+    xmlns="http://apache.org/cordova/ns/plugins/1.0"
+    id="nl.x-services.plugins.actionsheet"
+    version="1.1.4">
+
+	<name>Communicator</name>
+
+	<description>
+  	Provide functionality for service advertisement over a local network and socket communication.
+        </description>
+
+	<author>Toma Popov</author>
+
+	<license>MIT</license>
+
+	<keywords>NSNetService, WirelessAppUpdate, mDNS, websockets, PocketSocket, Communicator</keywords>
+
+	<repo>https://github.com/e2l3n/Communicator.git</repo>
+
+	<engines>
+		<engine name="cordova" version=">=3.0.0"/>
+	</engines>
+
+	<js-module src="www/Communicator.js" name="Communicator">
+		<clobbers target="window.plugins.communicator"/>
+	</js-module>
+
+	<!-- ios -->
+	<platform name="ios">
+		<config-file target="config.xml" parent="/*">
+			<feature name="Communicator">
+				<param name="ios-package" value="Communicator"/>
+			</feature>
+		</config-file>
+		<header-file src="src/ios/Communicator.h"/>
+		<source-file src="src/ios/Communicator.m"/>
+	</platform>
+</plugin>
