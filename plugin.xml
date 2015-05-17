@@ -14,7 +14,7 @@
 	    <engine name="cordova" version=">=3.0" />
 	</engines>
 
-    <js-module src="www/WAUCommunicator.js" name="WAUCommunicator">
+    <js-module src="www/Communicator.js" name="Communicator">
         <clobbers target="window.plugins.WAUCommunicator" />
     </js-module>
      
