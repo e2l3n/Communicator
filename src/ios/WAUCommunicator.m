@@ -15,15 +15,15 @@
 
 
 //Private constants.
-static CGFloat const kTimeOut = 15.0f;
-static NSUInteger const kPort = 4567;
+static CGFloat const kTimeOut = 15.0f; // in seconds.
+static NSUInteger const kPort = 4567;// TODO: Find and acquire a free system port.
 
-@interface WAUCommunicator () <NSNetServiceDelegate, PSWebSocketServerDelegate>
+@interface WAUCommunicator () <NSNetServiceDelegate, PSWebSocketServerDelegate, UIWebViewDelegate>
 
 @property (strong, nonatomic) NSNetService *netService;
 @property (nonatomic, strong) PSWebSocketServer *server;
 @property (strong, nonatomic) NSString *htmlContent;
-
+@property (assign, nonatomic) BOOL isCachingEnabled;
 @property (strong, nonatomic) WAUInvokedUrlCommandStorage *invokedUrlCommandStorage;
 
 @end
@@ -36,9 +36,10 @@ static NSUInteger const kPort = 4567;
     self = [super initWithWebView:theWebView];
     if (self) {
         self.invokedUrlCommandStorage = WAUInvokedUrlCommandStorage.new;
+        self.webView.delegate = self;
         
         NSString *serviceName = [NSString stringWithFormat:@"%@-%@", kServicePrefix, UIDevice.currentDevice.name];
-        self.netService = [[NSNetService alloc] initWithDomain:@"local."
+        self.netService = [[NSNetService alloc] initWithDomain:@""
                                                           type:@"_http._tcp."
                                                           name:serviceName
                                                           port:kPort];
@@ -61,26 +62,27 @@ static NSUInteger const kPort = 4567;
     NSString *broadcastOpt = command.arguments.firstObject;
     
     if (![broadcastOpt isKindOfClass:NSString.class] ||
-        ![broadcastOpt isEqualToString:kBroadcastStart] ||
-        ![broadcastOpt isEqualToString:kBroadcastStop]) {
+        (![broadcastOpt isEqualToString:kBroadcastStart] && ![broadcastOpt isEqualToString:kBroadcastStop])) {
         
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Invalid args."];
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR
+                                                          messageAsString:@"Invalid args."];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
         
         return;
     }
     
-    if (!self.server) {
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Internal error."];
+    if (!self.netService) {
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR
+                                                          messageAsString:@"Internal error."];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
         
         return;
     }
     
     if ([broadcastOpt isEqualToString:kBroadcastStart]) {
-        [self.netService publish];
-        [self.netService resolveWithTimeout:kTimeOut];
         [self.netService startMonitoring];
+        [self.netService resolveWithTimeout:kTimeOut];
+        [self.netService publish];
     } else if ([broadcastOpt isEqualToString:kBroadcastStop]) {
         [self.netService stopMonitoring];
         [self.netService stop];
@@ -93,17 +95,18 @@ static NSUInteger const kPort = 4567;
     NSString *listenOpt = command.arguments.firstObject;
     
     if (![listenOpt isKindOfClass:NSString.class] ||
-        ![listenOpt isEqualToString:kListenStart] ||
-        ![listenOpt isEqualToString:kListenStop]) {
+        (![listenOpt isEqualToString:kListenStart] && ![listenOpt isEqualToString:kListenStop])) {
         
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Invalid args."];
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR
+                                                          messageAsString:@"Invalid args."];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
         
         return;
     }
     
-    if (!self.netService) {
-        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:@"Internal error."];
+    if (!self.server) {
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR
+                                                          messageAsString:@"Internal error."];
         [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
         
         return;
@@ -118,12 +121,41 @@ static NSUInteger const kPort = 4567;
     [self.invokedUrlCommandStorage addCommand:command];
 }
 
+- (void)enableCaching:(CDVInvokedUrlCommand*)command {
+    NSString *cachingOpt = command.arguments.firstObject;
+    
+    if (![cachingOpt isKindOfClass:NSString.class] ||
+        (![cachingOpt isEqualToString:kCacheOptionEnable] && ![cachingOpt isEqualToString:kCacheOptionDisable])) {
+        CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR
+                                                          messageAsString:@"Invalid args."];
+        [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+        
+        return;
+    }
+    
+    self.isCachingEnabled = [cachingOpt isEqualToString:kCacheOptionEnable];
+    
+    if (!self.isCachingEnabled) {
+        [WAUFileOperator.sharedInstance performAllFilesCleanUp];
+    }
+    
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK];
+    [self.commandDelegate sendPluginResult:pluginResult callbackId:command.callbackId];
+}
+
+#pragma mark - UIWebViewDelegate
+
+- (BOOL)webView:(UIWebView *)webView shouldStartLoadWithRequest:(NSURLRequest *)request navigationType:(UIWebViewNavigationType)navigationType {
+    return YES;
+}
+
 #pragma mark - NSNetServiceDelegate
 
 /* Sent to the NSNetService instance's delegate when the publication of the instance is complete and successful.
  */
 - (void)netServiceDidPublish:(NSNetService *)sender {
-    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Net service did publish."];
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
+                                                      messageAsString:@"Net service did publish."];
     [self.invokedUrlCommandStorage sendPluginResult:pluginResult
                                   toCommandDelegate:self.commandDelegate
                              commandTypesOfInterest:@[kBroadcastStart]];
@@ -132,7 +164,8 @@ static NSUInteger const kPort = 4567;
 /* Sent to the NSNetService instance's delegate when an error in publishing the instance occurs. The error dictionary will contain two key/value pairs representing the error domain and code (see the NSNetServicesError enumeration above for error code constants). It is possible for an error to occur after a successful publication.
  */
 - (void)netService:(NSNetService *)sender didNotPublish:(NSDictionary *)errorDict {
-    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR messageAsString:errorDict.description];
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR
+                                                      messageAsString:errorDict.description];
     [self.invokedUrlCommandStorage sendPluginResult:pluginResult
                                   toCommandDelegate:self.commandDelegate
                              commandTypesOfInterest:@[kBroadcastStart]];
@@ -141,7 +174,8 @@ static NSUInteger const kPort = 4567;
 /* Sent to the NSNetService instance's delegate when the instance's previously running publication or resolution request has stopped.
  */
 - (void)netServiceDidStop:(NSNetService *)sender {
-    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Net service did stop."];
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
+                                                      messageAsString:@"Net service did stop."];
     [self.invokedUrlCommandStorage sendPluginResult:pluginResult
                                   toCommandDelegate:self.commandDelegate
                              commandTypesOfInterest:@[kBroadcastStop]];
@@ -152,7 +186,8 @@ static NSUInteger const kPort = 4567;
 
 - (void)serverDidStart:(PSWebSocketServer *)server {
     DLog(@"Server did start.");
-    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Server did start."];
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
+                                                      messageAsString:@"Server did start."];
     [self.invokedUrlCommandStorage sendPluginResult:pluginResult
                                   toCommandDelegate:self.commandDelegate
                              commandTypesOfInterest:@[kListenStart]];
@@ -160,7 +195,8 @@ static NSUInteger const kPort = 4567;
 
 - (void)serverDidStop:(PSWebSocketServer *)server {
     DLog(@"Server did stop.");
-    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK messageAsString:@"Server did stop."];
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_OK
+                                                      messageAsString:@"Server did stop."];
     [self.invokedUrlCommandStorage sendPluginResult:pluginResult
                                   toCommandDelegate:self.commandDelegate
                              commandTypesOfInterest:@[kListenStop]];
@@ -192,14 +228,24 @@ static NSUInteger const kPort = 4567;
                 [self.webView loadHTMLString:self.htmlContent baseURL:nil];
             } else {
                 __weak WAUCommunicator *weakSelf = self;
+                
+                void (^opBlock)(id, NSError *) = ^void(id result, NSError *error) {
+                    if (result && !error) {
+                        weakSelf.htmlContent = [[NSString alloc] initWithData:result
+                                                                     encoding:NSUTF8StringEncoding];
+                        [weakSelf.webView loadHTMLString:weakSelf.htmlContent baseURL:nil];
+                    }
+                };
+                
+                if (self.isCachingEnabled) {
+                    opBlock(self.htmlContent, nil);
+                    return;
+                }
+                
                 [WAUFileOperator.sharedInstance loadDataForFileName:kFilenameHTML
                                                     completionQueue:NSOperationQueue.currentQueue
                                                          completion:^(NSData *result, NSError *error) {
-                                                             if (result && !error) {
-                                                                 weakSelf.htmlContent = [[NSString alloc] initWithData:result
-                                                                                                              encoding:NSUTF8StringEncoding];
-                                                                 [weakSelf.webView loadHTMLString:weakSelf.htmlContent baseURL:nil];
-                                                             }
+                                                             opBlock(result, error);
                                                          }];
             }
             
@@ -225,6 +271,16 @@ static NSUInteger const kPort = 4567;
     [self.invokedUrlCommandStorage sendPluginResult:pluginResult
                                   toCommandDelegate:self.commandDelegate
                              commandTypesOfInterest:@[kListenStart, kListenStop]];
+}
+
+#pragma mark - Responding to device events
+
+- (void)dispose {
+    CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR
+                                                      messageAsString:@"Screen was disposed."];
+    [self.invokedUrlCommandStorage sendPluginResult:pluginResult
+                                  toCommandDelegate:self.commandDelegate
+                             commandTypesOfInterest:@[kBroadcastStart, kBroadcastStop, kListenStart, kListenStop]];
 }
 
 @end

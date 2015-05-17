@@ -16,6 +16,9 @@
 @interface WAUCommunicator : CDVPlugin
 
 - (void)broadcast:(CDVInvokedUrlCommand*)command;
+
 - (void)listen:(CDVInvokedUrlCommand*)command;
+
+- (void)enableCaching:(CDVInvokedUrlCommand*)command;
 
 @end

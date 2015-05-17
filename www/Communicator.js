@@ -17,7 +17,9 @@ communicatorExport.COMMAND_TYPE = {
     kCOMMAND_BROADCASTSTART : 'WAUBroadcastStart',
     kCOMMAND_BROADCASTSTOP : 'WAUBroadcastStop',
     kCOMMAND_LISTENSTART : 'WAUListenStart',
-    kCOMMAND_LISTENSTOP : 'WAUListenStop'
+    kCOMMAND_LISTENSTOP : 'WAUListenStop',
+	kCommand_CacheEnable : 'WAUCacheEnable',
+    kCommand_CacheDisable : 'WAUCacheDisable',
 };
 
 /*
@@ -58,5 +60,25 @@ function (commandType, successCallback, errorCallback) {
 	  [commandType]);
 };
 
-module.exports = communicatorExport;
+/*
+ * Enables or disables caching of data. 
+ * 
+ * @param {string} use kCommand_CacheEnable to enable caching or kCOMMAND_LISTENSTOP to 
+ * disable caching/and perform cache clean up/.  
+ * @param {function()} successCallback The function to call if the requested action has been
+	successfully executed.
+ * @param {function()} failureCallback The function to call if the requested action has failed.
+ */
 
+communicatorExport.listen = 
+function (commandType, successCallback, errorCallback) {
+  cordova.exec(
+	  successCallback, 
+	  errorCallback, 
+	  "WAUCommunicator", 
+	  "enableCaching", 
+	  [commandType]);
+};
+
+
+module.exports = communicatorExport;
