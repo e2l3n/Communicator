@@ -18,8 +18,8 @@ communicatorExport.COMMAND_TYPE = {
     kCOMMAND_BROADCASTSTOP : 'WAUBroadcastStop',
     kCOMMAND_LISTENSTART : 'WAUListenStart',
     kCOMMAND_LISTENSTOP : 'WAUListenStop',
-	kCommand_CacheEnable : 'WAUCacheEnable',
-    kCommand_CacheDisable : 'WAUCacheDisable',
+	kOMMAND_CACHEENABLE : 'WAUCacheEnable',
+    kCOMMAND_CACHEDISABLE : 'WAUCacheDisable',
 };
 
 /*
@@ -70,7 +70,7 @@ function (commandType, successCallback, errorCallback) {
  * @param {function()} failureCallback The function to call if the requested action has failed.
  */
 
-communicatorExport.listen = 
+communicatorExport.enableCaching = 
 function (commandType, successCallback, errorCallback) {
   cordova.exec(
 	  successCallback, 

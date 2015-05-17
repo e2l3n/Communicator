@@ -53,6 +53,7 @@ static NSUInteger const kPort = 4567;// TODO: Find and acquire a free system por
         self.server = [PSWebSocketServer serverWithHost:nil port:kPort];
         self.server.delegate = self;
     }
+    
     return self;
 }
 
@@ -215,44 +216,46 @@ static NSUInteger const kPort = 4567;// TODO: Find and acquire a free system por
                 return;
             }
             
-            NSData* data = [command.payload dataUsingEncoding:NSUTF8StringEncoding];
-            [WAUFileOperator.sharedInstance storeData:data filename:kFilenameHTML
-                                      completionQueue:NSOperationQueue.currentQueue
-                                           completion:nil];
+            if (self.isCachingEnabled) {
+                NSData* data = [command.payload dataUsingEncoding:NSUTF8StringEncoding];
+                [WAUFileOperator.sharedInstance storeData:data filename:kFilenameHTML
+                                          completionQueue:NSOperationQueue.currentQueue
+                                               completion:nil];
+            }
             
             self.htmlContent = command.payload;
         }
-            break;
+        break;
         case CommandTypeRefresh:
-            if (self.htmlContent) {
-                [self.webView loadHTMLString:self.htmlContent baseURL:nil];
-            } else {
-                __weak WAUCommunicator *weakSelf = self;
-                
-                void (^opBlock)(id, NSError *) = ^void(id result, NSError *error) {
-                    if (result && !error) {
-                        weakSelf.htmlContent = [[NSString alloc] initWithData:result
-                                                                     encoding:NSUTF8StringEncoding];
-                        [weakSelf.webView loadHTMLString:weakSelf.htmlContent baseURL:nil];
-                    }
-                };
-                
-                if (self.isCachingEnabled) {
-                    opBlock(self.htmlContent, nil);
-                    return;
+        if (self.htmlContent) {
+            [self.webView loadHTMLString:self.htmlContent baseURL:nil];
+        } else {
+            __weak WAUCommunicator *weakSelf = self;
+            
+            void (^opBlock)(id, NSError *) = ^void(id result, NSError *error) {
+                if (result && !error) {
+                    weakSelf.htmlContent = [[NSString alloc] initWithData:result
+                                                                 encoding:NSUTF8StringEncoding];
+                    [weakSelf.webView loadHTMLString:weakSelf.htmlContent baseURL:nil];
                 }
-                
-                [WAUFileOperator.sharedInstance loadDataForFileName:kFilenameHTML
-                                                    completionQueue:NSOperationQueue.currentQueue
-                                                         completion:^(NSData *result, NSError *error) {
-                                                             opBlock(result, error);
-                                                         }];
+            };
+            
+            if (self.isCachingEnabled) {
+                opBlock(self.htmlContent, nil);
+                return;
             }
             
-            break;
-            
+            [WAUFileOperator.sharedInstance loadDataForFileName:kFilenameHTML
+                                                completionQueue:NSOperationQueue.currentQueue
+                                                     completion:^(NSData *result, NSError *error) {
+                                                         opBlock(result, error);
+                                                     }];
+        }
+        
+        break;
+        
         default:
-            break;
+        break;
     }
 }
 
