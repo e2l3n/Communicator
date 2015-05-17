@@ -26,7 +26,7 @@ static NSString * const kBroadcastStop = @"WAUBroadcastStop";
 static NSString * const kListenStart = @"WAUListenStart";
 static NSString * const kListenStop = @"WAUListenStop";
 
-static NSString * const kCacheOptionEnable = @"WAUCacheEnabled";
+static NSString * const kCacheOptionEnable = @"WAUCacheEnable";
 static NSString * const kCacheOptionDisable = @"WAUCacheDisable";
 
 typedef NS_ENUM(NSUInteger, ListenOption) {
