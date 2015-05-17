@@ -18,7 +18,7 @@ communicatorExport.COMMAND_TYPE = {
     kCOMMAND_BROADCASTSTOP : 'WAUBroadcastStop',
     kCOMMAND_LISTENSTART : 'WAUListenStart',
     kCOMMAND_LISTENSTOP : 'WAUListenStop',
-	kOMMAND_CACHEENABLE : 'WAUCacheEnable',
+	kCOMMAND_CACHEENABLE : 'WAUCacheEnable',
     kCOMMAND_CACHEDISABLE : 'WAUCacheDisable',
 };
 
