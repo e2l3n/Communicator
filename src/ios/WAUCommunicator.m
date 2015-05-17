@@ -240,7 +240,7 @@ static NSUInteger const kPort = 4567;// TODO: Find and acquire a free system por
                 }
             };
             
-            if (self.isCachingEnabled) {
+            if (!self.isCachingEnabled) {
                 opBlock(self.htmlContent, nil);
                 return;
             }
