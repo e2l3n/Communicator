@@ -9,7 +9,6 @@
 	<license>MIT</license>
 	<keywords>WAU,communicator</keywords>
     <repo>https://github.com/e2l3n/Communicator.git</repo>
-    <issue>https://github.com/floatinghotpot/cordova-plugin-admob/issues</issue>
 
 	<engines>
 	    <engine name="cordova" version=">=3.0" />
