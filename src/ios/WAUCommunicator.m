@@ -280,11 +280,21 @@ static NSUInteger const kPort = 4567;// TODO: Find and acquire a free system por
 #pragma mark - Responding to device events
 
 - (void)dispose {
+   [self.netService stop];
+   [self.server stop];
+
     CDVPluginResult* pluginResult = [CDVPluginResult resultWithStatus:CDVCommandStatus_ERROR
                                                       messageAsString:@"Screen was disposed."];
     [self.invokedUrlCommandStorage sendPluginResult:pluginResult
                                   toCommandDelegate:self.commandDelegate
                              commandTypesOfInterest:@[kBroadcastStart, kBroadcastStop, kListenStart, kListenStop]];
 }
+
+/*
+- (void)dealloc {
+   [self.netService stop];
+   [self.server stop];
+}
+*/
 
 @end
